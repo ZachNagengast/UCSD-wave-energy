@@ -37,20 +37,23 @@ theta_inner = 0;        %rad
 omega_inner = 0;        %rad/s
 
 %wave input
-time = 0:0.01:10;       %seconds
+dt = 0.01;              %time step
+time = 0:dt:100;       %seconds
 alpha_outer = ((2*pi/wave_period)^4)*(wave_mag/g)* ...  %derivation eq 89 in paper
     sin(2*pi*time/wave_period);   %array of accelerations outer gimbal over time
 
-%try 1 - not sure if this is right but this is based from andersons equation slide eq 5
-omega_inner1 = alpha_outer/(2*omega_rotor*rpm_radps); 
+% %try 1 - omega_inner = omega_gyro + omega_initial
+% for n=1:length(alpha_outer)-1
+%     omega_inner1(n+1) = alpha_outer(n)/(2*omega_rotor*rpm_radps)+omega_inner1(n);
+% end
+% theta_inner1(1)=0;
+% for n=1:length(omega_inner)-1
+%     theta_inner1(n+1) = theta_inner1(n)+omega_inner1(n)*dt;
+% end
 
-%try 2 - omega_inner = omega_gyro + omega_initial
+%try 2 - dtheta method
+dtheta_inner = alpha_outer/(2*omega_rotor*rpm_radps) * dt;
 for n=1:length(alpha_outer)-1
-    omega_inner(n+1) = alpha_outer(n)/(2*omega_rotor*rpm_radps)+omega_inner(n);
-end
-
-%try 3 - dtheta method
-dtheta_inner = alpha_outer/(2*omega_rotor*rpm_radps) * 0.01;
-for n=1:length(dtheta_inner)-1
-    theta_inner(n+1) = theta_inner(n)+dtheta_inner(n);
+    theta_inner(n+1) = theta_inner(n)+omega_inner(n)*dt;
+    omega_inner(n+1) = abs(alpha_outer(n))/(2*omega_rotor*rpm_radps*abs(cos(theta_inner(n))));
 end

@@ -1,10 +1,6 @@
-%Simulate Wave Generator Motion
-
-%Kevin - eventually we'll want to make it a function but to make sure it
-%works now, I'll start by leaving it a script.  Makin it a function later
-%should be easy
-%unsure of how inertia plays into equations based on Anderson's derivation
-%seems like it's only ratio of inerta?
+function simulation(wave_freq,wave_mag,omega_rotor,time_elapsed)
+%Simulate Wave Generator Inner Gimabal Motion
+%simulation(wave frequency Hz, wave magnitude meter, rotor speed rpm)
 
 %conversion factors
 in_m = .0254;           %multiply inches to get meters, divide meters to get inches
@@ -15,9 +11,6 @@ g = 9.81;               %m/s^2
 r = 6;                  %in
 thick = .25;            %in
 density = 1400;         %kg/m^3 acrylic from http://www.avlandesign.com/density_construction.htm
-omega_rotor = 3000;     %rpm
-wave_freq = .125;       %Hz *** I used same parameters as in paper from Oscar
-wave_mag = 1.5;         %m
 wave_period = 1/wave_freq; %seconds
 
 %Convert radius and thickness
@@ -38,22 +31,28 @@ omega_inner = 0;        %rad/s
 
 %wave input
 dt = 0.01;              %time step
-time = 0:dt:100;       %seconds
+time = 0:dt:time_elapsed;       %seconds
 alpha_outer = ((2*pi/wave_period)^4)*(wave_mag/g)* ...  %derivation eq 89 in paper
     sin(2*pi*time/wave_period);   %array of accelerations outer gimbal over time
 
-% %try 1 - omega_inner = omega_gyro + omega_initial
-% for n=1:length(alpha_outer)-1
-%     omega_inner1(n+1) = alpha_outer(n)/(2*omega_rotor*rpm_radps)+omega_inner1(n);
-% end
-% theta_inner1(1)=0;
-% for n=1:length(omega_inner)-1
-%     theta_inner1(n+1) = theta_inner1(n)+omega_inner1(n)*dt;
-% end
+dalpha_outer = ((2*pi/wave_period)^5)*(wave_mag/g)* ...  
+    cos(2*pi*time/wave_period);
 
-%try 2 - dtheta method
-dtheta_inner = alpha_outer/(2*omega_rotor*rpm_radps) * dt;
+%Euler method - omega_inner = omega_gyro + omega_initial
 for n=1:length(alpha_outer)-1
-    theta_inner(n+1) = theta_inner(n)+omega_inner(n)*dt;
-    omega_inner(n+1) = abs(alpha_outer(n))/(2*omega_rotor*rpm_radps*abs(cos(theta_inner(n))));
+    omega_inner(n+1) = abs(alpha_outer(n))/(2*omega_rotor*rpm_radps)+omega_inner(n);
+    if omega_inner(n+1) > 2*pi*wave_freq
+        omega_inner(n+1) = 2*pi*wave_freq;
+    end
 end
+for n=1:length(omega_inner)-1
+    theta_inner(n+1) = theta_inner(n)+omega_inner(n)*dt;
+end
+
+%plot angular position and velocity
+plot(time,omega_inner,time,theta_inner,'r')
+title('Inner Gimbal Position and Velocity')
+xlabel('Time, sec'); ylabel('Position, rad & Velocity, rad/sec')
+legend('Velocity','Position')
+
+%desired rotor speed - sqrt(2)/2 * omega_inner

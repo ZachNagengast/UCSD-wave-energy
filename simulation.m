@@ -40,12 +40,8 @@ dalpha_outer = ((2*pi/wave_period)^5)*(wave_mag/g)* ...
 
 %Euler method - omega_inner = omega_gyro + omega_initial
 for n=1:length(alpha_outer)-1
-    omega_inner(n+1) = abs(alpha_outer(n))/(2*omega_rotor*rpm_radps)+omega_inner(n);
-    if omega_inner(n+1) > 2*pi*wave_freq
-        omega_inner(n+1) = 2*pi*wave_freq;
-    end
-end
-for n=1:length(omega_inner)-1
+    omega_inner(n+1) = alpha_outer(n)*cos(theta_inner(n))/(2*omega_rotor*rpm_radps)+omega_inner(n);
+
     theta_inner(n+1) = theta_inner(n)+omega_inner(n)*dt;
 end
 

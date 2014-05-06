@@ -85,11 +85,32 @@ function pushbutton1_Callback(hObject, eventdata, handles)
 
 clear all;
 %run the generator
-for i=1:250
-    wave(i)=i/10;
-    plot(sin(wave));
-    pause(.01);
+
+%% create arduino object and connect to board
+if exist('a','var') && isa(a,'arduino') && isvalid(a),
+    % nothing to do    
+else
+    a=arduino('/dev/tty.usbmodem1411');
 end
+
+%% basic analog and digital IO
+
+% specify pin mode for pins 13
+pinMode(a,3,'input');
+
+
+% output the digital value (0 or 1) to pin 13
+gen = zeros(255);
+for i=1:255
+av = analogRead(a,3);
+gen(i)=av;
+plot(gen);
+pause(.05);
+end
+
+
+flush(a);
+delete(a);
 
 
 

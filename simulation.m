@@ -46,9 +46,9 @@ for n=1:length(alpha_outer)-1
 end
 
 %plot angular position and velocity
-plot(time,omega_inner,time,theta_inner,'r')
-title('Inner Gimbal Position and Velocity')
-xlabel('Time, sec'); ylabel('Position, rad & Velocity, rad/sec')
-legend('Velocity','Position')
+subplot(2,1,1);plot(time,theta_inner);title('Inner Gimbal Position')
+ylabel('Position, rad')
+subplot(2,1,2);plot(time,omega_inner);title('Inner Gimbal Velocity');
+xlabel('Time, sec');ylabel('Velocity, rad/sec')
 
 %desired rotor speed - sqrt(2)/2 * omega_inner

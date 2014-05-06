@@ -82,61 +82,15 @@ function pushbutton1_Callback(hObject, eventdata, handles)
 % hObject    handle to pushbutton1 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-axes(handles.axes1);
-cla;
 
-popup_sel_index = get(handles.popupmenu1, 'Value');
-switch popup_sel_index
-    case 1
-        plot(rand(5));
-    case 2
-        plot(sin(1:0.01:25.99));
-    case 3
-        bar(1:.5:10);
-    case 4
-        plot(membrane);
-    case 5
-        surf(peaks);
+clear all;
+%run the generator
+for i=1:250
+    wave(i)=i/10;
+    plot(sin(wave));
+    pause(.01);
 end
 
-
-% --------------------------------------------------------------------
-function FileMenu_Callback(hObject, eventdata, handles)
-% hObject    handle to FileMenu (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-
-% --------------------------------------------------------------------
-function OpenMenuItem_Callback(hObject, eventdata, handles)
-% hObject    handle to OpenMenuItem (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-file = uigetfile('*.fig');
-if ~isequal(file, 0)
-    open(file);
-end
-
-% --------------------------------------------------------------------
-function PrintMenuItem_Callback(hObject, eventdata, handles)
-% hObject    handle to PrintMenuItem (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-printdlg(handles.figure1)
-
-% --------------------------------------------------------------------
-function CloseMenuItem_Callback(hObject, eventdata, handles)
-% hObject    handle to CloseMenuItem (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-selection = questdlg(['Close ' get(handles.figure1,'Name') '?'],...
-                     ['Close ' get(handles.figure1,'Name') '...'],...
-                     'Yes','No','Yes');
-if strcmp(selection,'No')
-    return;
-end
-
-delete(handles.figure1)
 
 
 % --- Executes on selection change in popupmenu1.

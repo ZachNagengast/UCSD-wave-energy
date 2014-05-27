@@ -22,7 +22,7 @@ function varargout = wavegen(varargin)
 
 % Edit the above text to modify the response to help wavegen
 
-% Last Modified by GUIDE v2.5 06-May-2014 13:11:11
+% Last Modified by GUIDE v2.5 22-May-2014 11:36:46
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -57,12 +57,6 @@ handles.output = hObject;
 % Update handles structure
 guidata(hObject, handles);
 
-% This sets up the initial plot - only do when we are invisible
-% so window can get raised using wavegen.
-if strcmp(get(hObject,'Visible'),'off')
-    plot(rand(5));
-end
-
 % UIWAIT makes wavegen wait for user response (see UIRESUME)
 % uiwait(handles.figure1);
 
@@ -85,6 +79,17 @@ function pushbutton1_Callback(hObject, eventdata, handles)
 
 clear all;
 %run the generator
+global rotorSpeed;
+global a;
+global run;
+global gen;
+global loop;
+global step_tot;
+global loopSpeed;
+loopSpeed = 1000;
+rotorSpeed = 0;
+
+microstepcurve = [0, 50, 98, 142, 180, 212, 236, 250, 255];
 
 %% create arduino object and connect to board
 if exist('a','var') && isa(a,'arduino') && isvalid(a),
@@ -96,47 +101,106 @@ end
 %% basic analog and digital IO
 
 % specify pin mode for pins 13
-pinMode(a,3,'input');
+pinMode(a,9,'output');      %M1_PWM 
+pinMode(a,7,'output');      %M1_DIR
+% pinMode(a,0,'input');       %M1_CURRENT
+% pinMode(a,1,'input');       %GEN_CURRENT
+encoderAttach(a,0,3,2);     %M1_ENCODER 
+% encoderAttach(a,1,18,19);   %GEN_ENCODER
+pinMode(a,6,'output');      %STP_PULSE
+pinMode(a,5,'output');      %STP_DIR  
 
+digitalWrite(a,7,1);        %SET M1 DIR
 
-% output the digital value (0 or 1) to pin 13
-gen = zeros(255);
-for i=1:255
-av = analogRead(a,3);
-gen(i)=av;
+av = 0;
+gen(1) = av;
 plot(gen);
-pause(.05);
+
+run = 1;
+stepperSpeed(a,1,1);
+
+
+% rotates stepper with given amplitude and freq
+setupStepper(30, .5);
+i = 1;
+delay = loop(1);
+dir = 'forward';
+pulse = 1;
+t0=clock;
+
+%main loop @ 200hz
+k = 0;
+j = 0;
+while (run == 1)
+    k=k+1;
+    av = analogRead(a,3);
+%     gen(i) = av;
+%     gen(k) = step_tot;
+
+    enc(k) = encoderRead(a,0);
+    
+    mot(k)=round(rotorSpeed*255);
+
+    plot(enc);
+    
+    % control stepper
+    if (loopSpeed<=etime(clock,t0))
+        t0=clock;
+        stepperStep(a,1,dir,'single',delay);
+        i=i+1;
+        delay = loop(i);
+            
+        if (strcmp(dir, 'forward'))
+            step_tot = step_tot+loopSpeed/(loop(i-1)*1000);
+        else
+            step_tot = step_tot-loopSpeed/(loop(i-1)*1000);
+        end
+        
+        j=j+1;
+        gen(j) = step_tot;
+    end
+
+
+    if (i==size(loop,1))
+        if (strcmp(dir, 'forward'))
+            dir = 'backward';
+        else
+            dir = 'forward';
+        end
+        i = 1;
+    end
+    
+    pause(.005);
 end
 
-
-flush(a);
-delete(a);
-
-
-
-% --- Executes on selection change in popupmenu1.
-function popupmenu1_Callback(hObject, eventdata, handles)
-% hObject    handle to popupmenu1 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: contents = get(hObject,'String') returns popupmenu1 contents as cell array
-%        contents{get(hObject,'Value')} returns selected item from popupmenu1
-
-
-% --- Executes during object creation, after setting all properties.
-function popupmenu1_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to popupmenu1 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: popupmenu controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-     set(hObject,'BackgroundColor','white');
+function setupStepper(amp, freq)
+global loop;
+global loopSpeed;
+global step_tot;
+step_tot = 0;
+resolution = 5;
+period = 1/freq;
+steps_per_rot = 800; % given in datasheet, adjust by using microsteps
+deg_per_step = 360/steps_per_rot; 
+steps_to_amp = round(amp/deg_per_step);
+time_to_amp = period/4;
+loopSpeed = time_to_amp/resolution;
+avg_delay = time_to_amp/steps_to_amp;
+steps=zeros(steps_to_amp,1);
+delay_factor = (2/pi)*avg_delay/0.3639*1000;
+for i=1:steps_to_amp
+    steps(i) = asin(i*(1/steps_to_amp))*delay_factor;
 end
 
-set(hObject, 'String', {'plot(rand(5))', 'plot(sin(1:0.01:25))', 'bar(1:.5:10)', 'plot(membrane)', 'surf(peaks)'});
+% create loop with resolution
+s = floor(size(steps,1)/resolution);
+speeds=zeros(resolution,1);
+for j = 1:resolution
+    speeds(j) = round(steps(s*j));
+end
+
+%initialize loop
+loop = [flipud(speeds); speeds]
 
 
 
@@ -206,3 +270,58 @@ function edit3_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
+
+
+% --- Executes on slider movement.
+function rotorSlider_Callback(hObject, eventdata, handles)
+% hObject    handle to rotorSlider (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'Value') returns position of slider
+%        get(hObject,'Min') and get(hObject,'Max') to determine range of slider
+global rotorSpeed;
+global a;
+rotorSpeed = get(hObject,'Value')
+analogWrite(a,9,round(rotorSpeed*255));
+
+
+% --- Executes during object creation, after setting all properties.
+function rotorSlider_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to rotorSlider (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: slider controls usually have a light gray background.
+if isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor',[.9 .9 .9]);
+end
+
+
+% --- Executes on button press in pushbutton5.
+function pushbutton5_Callback(hObject, eventdata, handles)
+% hObject    handle to pushbutton5 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+% save the output
+global a;
+global run;
+global gen;
+
+% stop the run loop
+run = 0;
+
+% stop the motor
+analogWrite(a,9,0);
+
+% releases stepper 
+stepperSpeed(a,2,-1); 
+
+if(~isdir('output'))
+    mkdir('output');
+end
+save('output/generator_data.mat','gen')
+
+
+flush(a);
+delete(a);

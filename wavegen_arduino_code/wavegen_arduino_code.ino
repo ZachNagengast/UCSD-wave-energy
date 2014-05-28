@@ -73,17 +73,19 @@ volatile Encoder Enc[3] = {{0,0,0,0}, {0,0,0,0}, {0,0,0,0}};
 //* create servo vector                                      */
 Servo servo[70];
 
-/* create and initialize motors                              */
-AF_Stepper stm1(200, 1);
-AF_Stepper stm2(200, 2);
-AF_DCMotor dcm1(1, MOTOR12_64KHZ); /* dc motor #1, 64KHz pwm */
-AF_DCMotor dcm2(2, MOTOR12_64KHZ); /* dc motor #2, 64KHz pwm */
-AF_DCMotor dcm3(3, MOTOR12_64KHZ); /* dc motor #3, 64KHz pwm */
-AF_DCMotor dcm4(4, MOTOR12_64KHZ); /* dc motor #4, 64KHz pwm */
+// Stepper constants
+double stepTime;
+double stepDelay;
+double stepDir;
 
 void setup() {
   /* initialize serial                                       */
   Serial.begin(115200);
+  stepTime = millis();
+  stepDelay = -1;
+  stepDir = 1;
+  pinMode(5,OUTPUT);
+  pinMode(6,OUTPUT);
 }
 
 
@@ -104,6 +106,14 @@ void loop() {
   int  val =  0;           /* generic value read from serial */
   int  agv =  0;           /* generic analog value           */
   int  dgv =  0;           /* generic digital value          */
+  
+  /* This code controls the stepper motor */
+  if ((stepTime+stepDelay)<=millis() && stepDelay != -1) {
+    digitalWrite(6,LOW);
+    digitalWrite(6,HIGH);
+    stepTime = millis();
+  }
+    
 
   /* The following instruction constantly checks if anything 
      is available on the serial port. Nothing gets executed in 
@@ -388,10 +398,10 @@ void loop() {
 
       case 171:
       /* the third received value indicates the motor speed  */
-      if (dcm==1) dcm1.setSpeed(val);
-      if (dcm==2) dcm2.setSpeed(val);
-      if (dcm==3) dcm3.setSpeed(val);
-      if (dcm==4) dcm4.setSpeed(val);            
+//      if (dcm==1) dcm1.setSpeed(val);
+//      if (dcm==2) dcm2.setSpeed(val);
+//      if (dcm==3) dcm3.setSpeed(val);
+//      if (dcm==4) dcm4.setSpeed(val);            
       s=-1;  /* we are done with servo write so go to -1 next*/
       break; /* s=171 taken care of                          */
 
@@ -414,26 +424,26 @@ void loop() {
       /* the third received value indicates forward, backward,
          release, with characters 'f', 'b', 'r', respectively,
          that have ascii codes 102, 98 and 114               */
-      if (dcm==1) {
-        if (val==102) dcm1.run(FORWARD);
-        if (val==98)  dcm1.run(BACKWARD);
-        if (val==114) dcm1.run(RELEASE);
-      }
-      if (dcm==2) {
-        if (val==102) dcm2.run(FORWARD);
-        if (val==98)  dcm2.run(BACKWARD);
-        if (val==114) dcm2.run(RELEASE);
-      }
-      if (dcm==3) {
-        if (val==102) dcm3.run(FORWARD);
-        if (val==98)  dcm3.run(BACKWARD);
-        if (val==114) dcm3.run(RELEASE);
-      }
-      if (dcm==4) {
-        if (val==102) dcm4.run(FORWARD);
-        if (val==98)  dcm4.run(BACKWARD);
-        if (val==114) dcm4.run(RELEASE);
-      }
+//      if (dcm==1) {
+//        if (val==102) dcm1.run(FORWARD);
+//        if (val==98)  dcm1.run(BACKWARD);
+//        if (val==114) dcm1.run(RELEASE);
+//      }
+//      if (dcm==2) {
+//        if (val==102) dcm2.run(FORWARD);
+//        if (val==98)  dcm2.run(BACKWARD);
+//        if (val==114) dcm2.run(RELEASE);
+//      }
+//      if (dcm==3) {
+//        if (val==102) dcm3.run(FORWARD);
+//        if (val==98)  dcm3.run(BACKWARD);
+//        if (val==114) dcm3.run(RELEASE);
+//      }
+//      if (dcm==4) {
+//        if (val==102) dcm4.run(FORWARD);
+//        if (val==98)  dcm4.run(BACKWARD);
+//        if (val==114) dcm4.run(RELEASE);
+//      }
       s=-1;  /* we are done with motor run so go to -1 next  */
       break; /* s=181 taken care of                          */
 
@@ -455,9 +465,8 @@ void loop() {
 
 
       case 191:
-      /* the third received value indicates the speed in rpm */ 
-      if (stm==1) stm1.setSpeed(val);
-      if (stm==2) stm2.setSpeed(val);
+      /* the third received value indicates the speed in rpm */
+      if (stm==2) stepDelay = (val);
             
       s=-1;  /* we are done with set speed so go to -1 next  */
       break; /* s=191 taken care of                          */
@@ -486,18 +495,18 @@ void loop() {
       switch (val) {
         
         case 102:
-        dir=FORWARD;
+        dir=0;
         s=202;
         break;        
         
         case 98:
-        dir=BACKWARD;
+        dir=1;
         s=202;
         break;        
         
         case 114: /* release and return to -1 here           */
-        if (stm==1) stm1.release();
-        if (stm==2) stm2.release();
+//        if (stm==1) stm1.release();
+//        if (stm==2) stm2.release();
         s=-1;        
         break;
         
@@ -544,8 +553,13 @@ void loop() {
       case 203:
       /* the last received value indicates the number of 
          steps,                                              */
-      if (stm==1) stm1.step(val,dir,sty);  /* do the steps   */
-      if (stm==2) stm2.step(val,dir,sty);
+//      if (stm==1){
+        /* do the steps   */
+        stepDir = dir;
+        digitalWrite(5,dir);
+        stepDelay = val;
+//      }
+//      if (stm==2) stm2.step(val,dir,sty);
       s=-1;        /* we are done with step so go to -1 next */
       break;       /* s=203 taken care of                    */
       

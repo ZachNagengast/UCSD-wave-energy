@@ -22,7 +22,7 @@ function varargout = wavegen(varargin)
 
 % Edit the above text to modify the response to help wavegen
 
-% Last Modified by GUIDE v2.5 22-May-2014 11:36:46
+% Last Modified by GUIDE v2.5 28-May-2014 14:58:23
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -71,9 +71,9 @@ function varargout = wavegen_OutputFcn(hObject, eventdata, handles)
 % Get default command line output from handles structure
 varargout{1} = handles.output;
 
-% --- Executes on button press in pushbutton1.
-function pushbutton1_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton1 (see GCBO)
+% --- Executes on button press in beginButton.
+function beginButton_Callback(hObject, eventdata, handles)
+% hObject    handle to beginButton (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
@@ -83,15 +83,16 @@ global rotorSpeed;
 global a;
 global run;
 global gen;
+global step;
 global loop;
 global step_tot;
 global loopSpeed;
+global data;
 loopSpeed = 1000;
 rotorSpeed = 0;
+runStepper = 1;
 
-microstepcurve = [0, 50, 98, 142, 180, 212, 236, 250, 255];
-
-%% create arduino object and connect to board
+% create arduino object and connect to board
 if exist('a','var') && isa(a,'arduino') && isvalid(a),
     % nothing to do    
 else
@@ -103,29 +104,41 @@ end
 % specify pin mode for pins 13
 pinMode(a,9,'output');      %M1_PWM 
 pinMode(a,7,'output');      %M1_DIR
-% pinMode(a,0,'input');       %M1_CURRENT
-% pinMode(a,1,'input');       %GEN_CURRENT
+% pinMode(a,14,'input');       %M1_CURRENT
+% pinMode(a,15,'input');       %GEN_CURRENT
 encoderAttach(a,0,3,2);     %M1_ENCODER 
-% encoderAttach(a,1,18,19);   %GEN_ENCODER
+% encoderAttach(a,0,18,19);   %GEN_ENCODER
 pinMode(a,6,'output');      %STP_PULSE
 pinMode(a,5,'output');      %STP_DIR  
 
 digitalWrite(a,7,1);        %SET M1 DIR
-
-av = 0;
-gen(1) = av;
-plot(gen);
-
-run = 1;
 stepperSpeed(a,1,1);
 
 
+mot(1) = 0;
+enc(1) = 0;
+gen(1) = 0;
+curr(1) = 0;
+pow(1) = 0;
+step(1) = 0;
+yTime(1) = 0;
+
+data = plot(step);
+hold on;
+motor = plot(mot,'r');
+set(data,'XData',yTime,'YData',step);
+set(motor,'XData',yTime,'YData',mot);
+xlabel('Time (s)');
+ylabel('Data');
+tStart = clock;
+
+run = 1;
+
 % rotates stepper with given amplitude and freq
-setupStepper(30, .5);
+setupStepper(10, .2);
 i = 1;
 delay = loop(1);
 dir = 'forward';
-pulse = 1;
 t0=clock;
 
 %main loop @ 200hz
@@ -133,18 +146,22 @@ k = 0;
 j = 0;
 while (run == 1)
     k=k+1;
-    av = analogRead(a,3);
+    yTime(k) = etime(clock, tStart);
+    
+%     curr(k) = analogRead(a,15) * 9; % m1 current
 %     gen(i) = av;
 %     gen(k) = step_tot;
-
-    enc(k) = encoderRead(a,0);
+% 
+%     enc(k) = encoderRead(a,0);
     
     mot(k)=round(rotorSpeed*255);
+    step(k) = step_tot*100000;
 
-    plot(enc);
+    set(data,'XData',yTime,'YData',step);
+    set(motor,'XData',yTime,'YData',mot);
     
     % control stepper
-    if (loopSpeed<=etime(clock,t0))
+    if (loopSpeed<=etime(clock,t0) && runStepper == 1)
         t0=clock;
         stepperStep(a,1,dir,'single',delay);
         i=i+1;
@@ -157,7 +174,6 @@ while (run == 1)
         end
         
         j=j+1;
-        gen(j) = step_tot;
     end
 
 
@@ -204,18 +220,18 @@ loop = [flipud(speeds); speeds]
 
 
 
-function edit1_Callback(hObject, eventdata, handles)
-% hObject    handle to edit1 (see GCBO)
+function freqText_Callback(hObject, eventdata, handles)
+% hObject    handle to freqText (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hints: get(hObject,'String') returns contents of edit1 as text
-%        str2double(get(hObject,'String')) returns contents of edit1 as a double
+% Hints: get(hObject,'String') returns contents of freqText as text
+%        str2double(get(hObject,'String')) returns contents of freqText as a double
 
 
 % --- Executes during object creation, after setting all properties.
-function edit1_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit1 (see GCBO)
+function freqText_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to freqText (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
@@ -227,18 +243,18 @@ end
 
 
 
-function edit2_Callback(hObject, eventdata, handles)
-% hObject    handle to edit2 (see GCBO)
+function ampText_Callback(hObject, eventdata, handles)
+% hObject    handle to ampText (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hints: get(hObject,'String') returns contents of edit2 as text
-%        str2double(get(hObject,'String')) returns contents of edit2 as a double
+% Hints: get(hObject,'String') returns contents of ampText as text
+%        str2double(get(hObject,'String')) returns contents of ampText as a double
 
 
 % --- Executes during object creation, after setting all properties.
-function edit2_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit2 (see GCBO)
+function ampText_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to ampText (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
@@ -250,18 +266,18 @@ end
 
 
 
-function edit3_Callback(hObject, eventdata, handles)
-% hObject    handle to edit3 (see GCBO)
+function rotorText_Callback(hObject, eventdata, handles)
+% hObject    handle to rotorText (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hints: get(hObject,'String') returns contents of edit3 as text
-%        str2double(get(hObject,'String')) returns contents of edit3 as a double
+% Hints: get(hObject,'String') returns contents of rotorText as text
+%        str2double(get(hObject,'String')) returns contents of rotorText as a double
 
 
 % --- Executes during object creation, after setting all properties.
-function edit3_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit3 (see GCBO)
+function rotorText_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to rotorText (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
@@ -298,15 +314,16 @@ if isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColo
 end
 
 
-% --- Executes on button press in pushbutton5.
-function pushbutton5_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton5 (see GCBO)
+% --- Executes on button press in stopButton.
+function stopButton_Callback(hObject, eventdata, handles)
+% hObject    handle to stopButton (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 % save the output
 global a;
 global run;
 global gen;
+global step;
 
 % stop the run loop
 run = 0;
@@ -315,13 +332,154 @@ run = 0;
 analogWrite(a,9,0);
 
 % releases stepper 
-stepperSpeed(a,2,-1); 
+stepperStep(a,1,'forward','single',255);
 
 if(~isdir('output'))
     mkdir('output');
 end
-save('output/generator_data.mat','gen')
+save(strcat('output/generator_data_',datestr(clock),'.mat'),'step')
 
 
 flush(a);
 delete(a);
+
+
+% --- Executes on button press in connectButton.
+function connectButton_Callback(hObject, eventdata, handles)
+% hObject    handle to connectButton (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+
+% --- Executes on button press in rotorButton.
+function rotorButton_Callback(hObject, eventdata, handles)
+% hObject    handle to rotorButton (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+
+% --- Executes on button press in waveButton.
+function waveButton_Callback(hObject, eventdata, handles)
+% hObject    handle to waveButton (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+
+% --- Executes on selection change in popupmenu3.
+function popupmenu3_Callback(hObject, eventdata, handles)
+% hObject    handle to popupmenu3 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = cellstr(get(hObject,'String')) returns popupmenu3 contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from popupmenu3
+
+
+% --- Executes during object creation, after setting all properties.
+function popupmenu3_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to popupmenu3 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on selection change in popupmenu4.
+function popupmenu4_Callback(hObject, eventdata, handles)
+% hObject    handle to popupmenu4 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = cellstr(get(hObject,'String')) returns popupmenu4 contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from popupmenu4
+
+
+% --- Executes during object creation, after setting all properties.
+function popupmenu4_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to popupmenu4 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function usbPort_Callback(hObject, eventdata, handles)
+% hObject    handle to usbPort (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of usbPort as text
+%        str2double(get(hObject,'String')) returns contents of usbPort as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function usbPort_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to usbPort (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on slider movement.
+function ampSlider_Callback(hObject, eventdata, handles)
+% hObject    handle to ampSlider (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'Value') returns position of slider
+%        get(hObject,'Min') and get(hObject,'Max') to determine range of slider
+
+
+% --- Executes during object creation, after setting all properties.
+function ampSlider_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to ampSlider (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: slider controls usually have a light gray background.
+if isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor',[.9 .9 .9]);
+end
+
+
+% --- Executes on slider movement.
+function freqSlider_Callback(hObject, eventdata, handles)
+% hObject    handle to freqSlider (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'Value') returns position of slider
+%        get(hObject,'Min') and get(hObject,'Max') to determine range of slider
+
+
+% --- Executes during object creation, after setting all properties.
+function freqSlider_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to freqSlider (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: slider controls usually have a light gray background.
+if isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor',[.9 .9 .9]);
+end
+
+
+% --- Executes on button press in resetButton.
+function resetButton_Callback(hObject, eventdata, handles)
+% hObject    handle to resetButton (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)

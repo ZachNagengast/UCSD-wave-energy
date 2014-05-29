@@ -78,6 +78,7 @@ function beginButton_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 clear all;
+
 %run the generator
 global rotorSpeed;
 global a;
@@ -121,6 +122,7 @@ gen(1) = 0;
 curr(1) = 0;
 pow(1) = 0;
 step(1) = 0;
+pot(1) = 0;
 yTime(1) = 0;
 
 data = plot(step);
@@ -135,11 +137,10 @@ tStart = clock;
 run = 1;
 
 % rotates stepper with given amplitude and freq
-setupStepper(10, .2);
+setupStepper(20, 1);
 i = 1;
-delay = loop(1);
-dir = 'forward';
 t0=clock;
+dir = 'forward';
 
 %main loop @ 200hz
 k = 0;
@@ -154,7 +155,7 @@ while (run == 1)
 % 
 %     enc(k) = encoderRead(a,0);
     
-    mot(k)=round(rotorSpeed*255);
+    mot(k)=round(rotorSpeed);
     step(k) = step_tot*100000;
 
     set(data,'XData',yTime,'YData',step);
@@ -163,9 +164,9 @@ while (run == 1)
     % control stepper
     if (loopSpeed<=etime(clock,t0) && runStepper == 1)
         t0=clock;
+        delay = loop(i);
         stepperStep(a,1,dir,'single',delay);
         i=i+1;
-        delay = loop(i);
             
         if (strcmp(dir, 'forward'))
             step_tot = step_tot+loopSpeed/(loop(i-1)*1000);
@@ -194,7 +195,7 @@ global loop;
 global loopSpeed;
 global step_tot;
 step_tot = 0;
-resolution = 5;
+resolution = 6;
 period = 1/freq;
 steps_per_rot = 800; % given in datasheet, adjust by using microsteps
 deg_per_step = 360/steps_per_rot; 
@@ -216,7 +217,7 @@ for j = 1:resolution
 end
 
 %initialize loop
-loop = [flipud(speeds); speeds]
+loop = [flipud(speeds); speeds];
 
 
 

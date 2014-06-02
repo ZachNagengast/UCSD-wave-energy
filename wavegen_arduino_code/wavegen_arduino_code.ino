@@ -82,7 +82,7 @@ void setup() {
   /* initialize serial                                       */
   Serial.begin(115200);
   stepTime = millis();
-  stepDelay = -1;
+  stepDelay = 255;
   stepDir = 1;
   pinMode(5,OUTPUT);
   pinMode(6,OUTPUT);
@@ -108,7 +108,7 @@ void loop() {
   int  dgv =  0;           /* generic digital value          */
   
   /* This code controls the stepper motor */
-  if ((stepTime+stepDelay)<=millis() && stepDelay != -1) {
+  if ((stepTime+stepDelay)<=millis() && stepDelay != 255) {
     digitalWrite(6,LOW);
     digitalWrite(6,HIGH);
     stepTime = millis();

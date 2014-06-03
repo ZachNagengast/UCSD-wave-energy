@@ -86,11 +86,15 @@ global wave_amp;
 global a;
 global run;
 global gen;
+global enc;
+global pot;
 global step;
 global loop;
 global step_tot;
+global yTime;
 global loopSpeed;
 global data;
+global runStepper;
 loopSpeed = 1000;
 rotorSpeed = 0;
 
@@ -108,10 +112,10 @@ global M1_PWM;
 M1_PWM = 10;
 M1_DIR = 7;
 M1_CURR = 15;
-M1_ENC1 = 3;
-M1_ENC2 = 2;
-GEN_ENC1 = 18;
-GEN_ENC2 = 19;
+M1_ENC1 = 18;
+M1_ENC2 = 19;
+GEN_ENC1 = 3;
+GEN_ENC2 = 2;
 STP_PULSE = 6;
 STP_DIR = 5;
 POT_PIN = 2;
@@ -121,8 +125,8 @@ pinMode(a,8,'output');
 pinMode(a,M1_PWM,'output');      %M1_PWM 
 pinMode(a,M1_DIR,'output');      %M1_DIR
 pinMode(a,M1_CURR,'input');       %M1_CURRENT
-% encoderAttach(a,0,M1_ENC1,M1_ENC2);     %M1_ENCODER 
-% encoderAttach(a,1,GEN_ENC1,GEN_ENC2);   %GEN_ENCODER
+encoderAttach(a,0,M1_ENC1,M1_ENC2);     %M1_ENCODER 
+encoderAttach(a,1,GEN_ENC1,GEN_ENC2);   %GEN_ENCODER
 pinMode(a,STP_PULSE,'output');      %STP_PULSE
 pinMode(a,STP_DIR,'output');      %STP_DIR  
 pinMode(a,POT_PIN,'input');      %Potentiometer
@@ -162,9 +166,10 @@ ylabel('Data');
 tStart = clock;
 
 run = 1;
+gearRatio = 3;
 
 runStepper = 0;
-wave_amp = 45;
+wave_amp = 30;
 wave_freq = .5;
 % rotates stepper with given amplitude and freq
 setupStepper(wave_amp, wave_freq);
@@ -175,6 +180,7 @@ dir = 'forward';
 %main loop @ 200hz
 k = 0;
 j = 0;
+i=round(size(loop,1)/2);
 while (run == 1)
     k=k+1;
     yTime(k) = etime(clock, tStart);
@@ -185,11 +191,11 @@ while (run == 1)
     
     mot(k)=round(rotorSpeed);
 %     step(k) = step_tot*100000;
-%     enc(k) = encoderRead(a,0);
-%     gen(k) = encoderRead(a,1);
-    pot(k) = analogRead(a,POT_PIN);
+    enc(k) = encoderRead(a,0)*360/465;
+    gen(k) = encoderRead(a,1)*360/(48*gearRatio);
+    pot(k) = round(analogRead(a,POT_PIN) - 512)*360/1023;
     pow(k) = analogRead(a,GEN_PIN) * 5;
-    curr(k) = analogRead(a,M1_CURR) * 34;
+%     curr(k) = analogRead(a,M1_CURR) * 34;
     
 %     set(data,'XData',yTime,'YData',step);
     set(motor,'XData',yTime,'YData',mot);
@@ -403,6 +409,9 @@ function waveButton_Callback(hObject, eventdata, handles)
 % hObject    handle to waveButton (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+global runStepper;
+runStepper = 1;
+
 
 
 % --- Executes on selection change in popupmenu3.

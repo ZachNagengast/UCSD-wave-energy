@@ -125,8 +125,8 @@ pinMode(a,8,'output');
 pinMode(a,M1_PWM,'output');      %M1_PWM 
 pinMode(a,M1_DIR,'output');      %M1_DIR
 pinMode(a,M1_CURR,'input');       %M1_CURRENT
-encoderAttach(a,0,M1_ENC1,M1_ENC2);     %M1_ENCODER 
-encoderAttach(a,1,GEN_ENC1,GEN_ENC2);   %GEN_ENCODER
+% encoderAttach(a,1,M1_ENC1,M1_ENC2);     %M1_ENCODER 
+encoderAttach(a,0,GEN_ENC1,GEN_ENC2);   %GEN_ENCODER
 pinMode(a,STP_PULSE,'output');      %STP_PULSE
 pinMode(a,STP_DIR,'output');      %STP_DIR  
 pinMode(a,POT_PIN,'input');      %Potentiometer
@@ -148,8 +148,8 @@ yTime(1) = 0;
 data = plot(step);
 hold on;
 motor = plot(mot,'r');
-encoder = plot(enc, 'g');
-generator = plot(gen, 'k');
+encoder = plot(enc, 'k');
+generator = plot(gen, 'g');
 potentiometer = plot(pot, 'm');
 power = plot(pow, 'c');
 current = plot(curr, 'y');
@@ -170,7 +170,7 @@ gearRatio = 3;
 
 runStepper = 0;
 wave_amp = 30;
-wave_freq = .5;
+wave_freq = .3;
 % rotates stepper with given amplitude and freq
 setupStepper(wave_amp, wave_freq);
 i = 1;
@@ -191,16 +191,16 @@ while (run == 1)
     
     mot(k)=round(rotorSpeed);
 %     step(k) = step_tot*100000;
-    enc(k) = encoderRead(a,0)*360/465;
-    gen(k) = encoderRead(a,1)*360/(48*gearRatio);
+%     enc(k) = encoderRead(a,1)*360/465;
+    gen(k) = encoderRead(a,0)*360/(48*gearRatio);
     pot(k) = round(analogRead(a,POT_PIN) - 512)*360/1023;
     pow(k) = analogRead(a,GEN_PIN) * 5;
 %     curr(k) = analogRead(a,M1_CURR) * 34;
     
 %     set(data,'XData',yTime,'YData',step);
     set(motor,'XData',yTime,'YData',mot);
-    set(encoder,'XData',yTime,'YData',enc);
-%     set(generator,'XData',yTime,'YData',gen); 
+%     set(encoder,'XData',yTime,'YData',enc);
+    set(generator,'XData',yTime,'YData',gen); 
     set(potentiometer,'XData',yTime,'YData',pot);
     set(power,'XData',yTime,'YData',pow);
     set(current,'XData',yTime,'YData',curr);

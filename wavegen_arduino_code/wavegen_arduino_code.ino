@@ -108,7 +108,11 @@ void loop() {
   int  dgv =  0;           /* generic digital value          */
   
   /* This code controls the stepper motor */
+<<<<<<< HEAD
   if ((stepTime+stepDelay)<=millis() && stepDelay < 255) {
+=======
+  if ((stepTime+stepDelay)<=millis() && stepDelay != 255) {
+>>>>>>> 265739bdb38bd3bae0eaa84242e93c0892b6ee16
     digitalWrite(6,LOW);
     digitalWrite(6,HIGH);
     stepTime = millis();
@@ -583,7 +587,8 @@ void loop() {
       case 211:
       /* the third received value indicates the first pin     
          from abs('c')=99, pin 2, to abs('¦')=166, pin 69    */
-      if (val>98 && val<167) {
+      if (enc == 1)val=108;
+      if (val>98 && val<167 && enc<1) {
         pin=val-97;                /* calculate pin          */
         Enc[enc].pinA=pin;         /* set pin A              */
         s=212;  /* next we need the second attachment pin    */
@@ -597,6 +602,7 @@ void loop() {
       case 212:
       /* the fourth received value indicates the second pin     
          from abs('c')=99, pin 2, to abs('¦')=166, pin 69    */
+      if (enc == 1)val=109;
       if (val>98 && val<167) {
         pin=val-97;                /* calculate pin          */
         Enc[enc].pinB=pin;         /* set pin B              */

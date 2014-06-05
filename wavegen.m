@@ -84,6 +84,7 @@ global rotorSpeed;
 global wave_freq;
 global wave_amp;
 global a;
+global usbPort;
 global run;
 global gen;
 global enc;
@@ -98,11 +99,12 @@ global runStepper;
 loopSpeed = 1000;
 rotorSpeed = 0;
 
+usbPort = get(handles.usbPort, 'String');
 % create arduino object and connect to board
 if exist('a','var') && isa(a,'arduino') && isvalid(a),
     % nothing to do    
 else
-    a=arduino('COM5');
+    a=arduino(usbPort);
 end
 
 %% basic analog and digital IO
@@ -345,8 +347,11 @@ global rotorSpeed;
 global a;
 global M1_PWM;
 rotorSpeed = get(hObject,'Value')
-analogWrite(a,M1_PWM,round(rotorSpeed*255));
-
+max_speed = 2000; %rpm
+set(handles.rotorText, 'String', round(rotorSpeed*2000));
+if(a) 
+    analogWrite(a,M1_PWM,round(rotorSpeed*255));
+end
 
 % --- Executes during object creation, after setting all properties.
 function rotorSlider_CreateFcn(hObject, eventdata, handles)
@@ -396,12 +401,28 @@ function connectButton_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
+global a;
+global usbPort;
+% create arduino object and connect to board
+if exist('a','var') && isa(a,'arduino') && isvalid(a),
+    % nothing to do    
+else
+    a=arduino(usbPort);
+end
+
+
 
 % --- Executes on button press in rotorButton.
 function rotorButton_Callback(hObject, eventdata, handles)
 % hObject    handle to rotorButton (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+global a;
+global rotorSpeed;
+rotorSpeed = get(handles.rotorText,'String');
+if(a) 
+    analogWrite(a,M1_PWM,round(rotorSpeed*255));
+end
 
 
 % --- Executes on button press in waveButton.
@@ -493,6 +514,8 @@ function ampSlider_Callback(hObject, eventdata, handles)
 %        get(hObject,'Min') and get(hObject,'Max') to determine range of slider
 global wave_amp;
 wave_amp = get(hObject,'Value')
+max_amp = 45;
+set(handles.ampText, 'String', round(wave_amp*100*max_amp)/100);
 
 
 % --- Executes during object creation, after setting all properties.
@@ -517,6 +540,7 @@ function freqSlider_Callback(hObject, eventdata, handles)
 %        get(hObject,'Min') and get(hObject,'Max') to determine range of slider
 global wave_freq;
 wave_freq = get(hObject,'Value')
+set(handles.freqText, 'String', round(wave_freq*100)/100);
 
 
 % --- Executes during object creation, after setting all properties.

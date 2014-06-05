@@ -108,7 +108,11 @@ void loop() {
   int  dgv =  0;           /* generic digital value          */
   
   /* This code controls the stepper motor */
+<<<<<<< HEAD
+  if ((stepTime+stepDelay)<=millis() && stepDelay < 255) {
+=======
   if ((stepTime+stepDelay)<=millis() && stepDelay != 255) {
+>>>>>>> 265739bdb38bd3bae0eaa84242e93c0892b6ee16
     digitalWrite(6,LOW);
     digitalWrite(6,HIGH);
     stepTime = millis();

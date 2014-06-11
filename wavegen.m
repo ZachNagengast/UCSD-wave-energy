@@ -110,12 +110,17 @@ global runStepper;
 loopSpeed = 1000;
 rotorSpeed = 0;
 
+<<<<<<< HEAD
+=======
+usbPort=get(handles.usbPort,'String');
+>>>>>>> 81895192537c1e6c7504797a555c6cc4405604e1
 % create arduino object and connect to board
 if exist('a','var') && isa(a,'arduino') && isvalid(a),
     % nothing to do    
 else
     a=arduino(usbPort);
 end
+
 
 %% basic analog and digital IO
 
@@ -181,8 +186,9 @@ run = 1;
 gearRatio = 3;
 
 runStepper = 0;
-wave_amp = 30;
-wave_freq = .3;
+wave_amp = str2double(get(handles.ampText, 'String'));
+wave_freq = str2double(get(handles.freqText, 'String'));
+
 % rotates stepper with given amplitude and freq
 setupStepper(wave_amp, wave_freq);
 i = 1;
@@ -356,10 +362,15 @@ global a;
 global M1_PWM;
 rotorSpeed = get(hObject,'Value')
 max_speed = 2000; %rpm
+<<<<<<< HEAD
 set(handles.rotorText, 'String', round(rotorSpeed*maxSpeed));
 if(a) 
+=======
+set(handles.rotorText, 'String', round(rotorSpeed*2000));
+
+>>>>>>> 81895192537c1e6c7504797a555c6cc4405604e1
     analogWrite(a,M1_PWM,round(rotorSpeed*255));
-end
+
 
 % --- Executes during object creation, after setting all properties.
 function rotorSlider_CreateFcn(hObject, eventdata, handles)
@@ -438,6 +449,7 @@ function connectButton_Callback(hObject, eventdata, handles)
 
 global a;
 global usbPort;
+usbPort=get(handles.usbPort,'String');
 % create arduino object and connect to board
 if exist('a','var') && isa(a,'arduino') && isvalid(a),
     % nothing to do    
@@ -454,10 +466,16 @@ function rotorButton_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 global a;
 global rotorSpeed;
+<<<<<<< HEAD
 rotorSpeed = str2double(get(handles.rotorText,'String'));
 if(a) 
+=======
+global M1_PWM;
+rotorSpeed = str2double(get(handles.rotorText,'String'))/2000;
+
+>>>>>>> 81895192537c1e6c7504797a555c6cc4405604e1
     analogWrite(a,M1_PWM,round(rotorSpeed*255));
-end
+
 
 
 % --- Executes on button press in waveButton.
@@ -595,6 +613,7 @@ function resetButton_Callback(hObject, eventdata, handles)
 % hObject    handle to resetButton (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+<<<<<<< HEAD
 global a;
 global run;
 global gen;
@@ -630,3 +649,9 @@ end
 % set(potentiometer,'XData',yTime,'YData',pot);
 % set(power,'XData',yTime,'YData',pow);
 % set(current,'XData',yTime,'YData',curr);
+=======
+clc
+clear all;
+drawnow;
+
+>>>>>>> 81895192537c1e6c7504797a555c6cc4405604e1

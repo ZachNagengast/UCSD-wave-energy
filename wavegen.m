@@ -57,6 +57,10 @@ handles.output = hObject;
 % Update handles structure
 guidata(hObject, handles);
 
+global usbPort;
+set(handles.usbPort, 'String', usbPort);
+
+
 % UIWAIT makes wavegen wait for user response (see UIRESUME)
 % uiwait(handles.figure1);
 
@@ -77,8 +81,6 @@ function beginButton_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-clear all;
-
 %run the generator
 global rotorSpeed;
 global wave_freq;
@@ -86,6 +88,10 @@ global wave_amp;
 global a;
 global usbPort;
 global run;
+
+usbPort = get(handles.usbPort, 'String')
+
+%plot vars
 global gen;
 global enc;
 global pot;
@@ -93,13 +99,17 @@ global step;
 global loop;
 global step_tot;
 global yTime;
+global mot;
+global curr;
+global pow;
+
+%initializations
 global loopSpeed;
 global data;
 global runStepper;
 loopSpeed = 1000;
 rotorSpeed = 0;
 
-usbPort = get(handles.usbPort, 'String');
 % create arduino object and connect to board
 if exist('a','var') && isa(a,'arduino') && isvalid(a),
     % nothing to do    
@@ -138,14 +148,14 @@ digitalWrite(a,M1_DIR,1);        %SET M1 DIR
 stepperSpeed(a,1,1);             %SET STP STARTING SPEED (HACK)
 digitalWrite(a,8,0);
 
-mot(1) = 0;
-enc(1) = 0;
-gen(1) = 0;
-curr(1) = 0;
-pow(1) = 0;
-step(1) = 0;
-pot(1) = 0;
-yTime(1) = 0;
+mot = [0; 0];
+enc = [0; 0];
+gen = [0; 0];
+curr = [0; 0];
+pow = [0; 0];
+step = [0; 0];
+pot = [0; 0];
+yTime = [0; 0];
 
 data = plot(step);
 hold on;
@@ -185,27 +195,25 @@ j = 0;
 i=round(size(loop,1)/2);
 while (run == 1)
     k=k+1;
+    
+%   Update the plot
+
     yTime(k) = etime(clock, tStart);
-    
-%     curr(k) = analogRead(a,15) * 9; % m1 current
-%     gen(i) = av;
-%     gen(k) = step_tot;
-    
-    mot(k)=round(rotorSpeed);
-%     step(k) = step_tot*100000;
-%     enc(k) = encoderRead(a,1)*360/465;
     gen(k) = encoderRead(a,0)*360/(48*gearRatio);
     pot(k) = round(analogRead(a,POT_PIN) - 512)*360/1023;
     pow(k) = analogRead(a,GEN_PIN) * 5;
+    step(k) = step_tot*100000;
+%     mot(k)=round(rotorSpeed);
+%     enc(k) = encoderRead(a,1)*360/465;
 %     curr(k) = analogRead(a,M1_CURR) * 34;
     
-%     set(data,'XData',yTime,'YData',step);
     set(motor,'XData',yTime,'YData',mot);
-%     set(encoder,'XData',yTime,'YData',enc);
     set(generator,'XData',yTime,'YData',gen); 
     set(potentiometer,'XData',yTime,'YData',pot);
     set(power,'XData',yTime,'YData',pow);
     set(current,'XData',yTime,'YData',curr);
+%     set(data,'XData',yTime,'YData',step);
+%     set(encoder,'XData',yTime,'YData',enc);
     
     % control stepper
     if (loopSpeed<=etime(clock,t0) && runStepper == 1)
@@ -348,7 +356,7 @@ global a;
 global M1_PWM;
 rotorSpeed = get(hObject,'Value')
 max_speed = 2000; %rpm
-set(handles.rotorText, 'String', round(rotorSpeed*2000));
+set(handles.rotorText, 'String', round(rotorSpeed*maxSpeed));
 if(a) 
     analogWrite(a,M1_PWM,round(rotorSpeed*255));
 end
@@ -375,21 +383,48 @@ global a;
 global run;
 global gen;
 global step;
+global enc;
+global pot;
+global step;
+global loop;
+global step_tot;
+global yTime;
+global mot;
+global curr;
+global pow;
+
+mot = [0; 0];
+enc = [0; 0];
+gen = [0; 0];
+curr = [0; 0];
+pow = [0; 0];
+step = [0; 0];
+pot = [0; 0];
+yTime = [0; 0];
 
 % stop the run loop
 run = 0;
+
+if(~isdir('output'))
+    mkdir('output');
+end
+filename = strcat('output/generator_data_',datestr(clock),'.mat');
+save(filename,'gen');
+save(filename,'step', '-append');
+save(filename,'enc', '-append');
+save(filename,'pot', '-append');
+save(filename,'loop', '-append');
+save(filename,'step_tot', '-append');
+save(filename,'yTime', '-append');
+save(filename,'mot', '-append');
+save(filename,'curr', '-append');
+save(filename,'pow', '-append');
 
 % stop the motor
 analogWrite(a,9,0);
 
 % releases stepper 
 stepperStep(a,1,'forward','single',255);
-
-if(~isdir('output'))
-    mkdir('output');
-end
-save(strcat('output/generator_data_',datestr(clock),'.mat'),'step')
-
 
 flush(a);
 delete(a);
@@ -419,7 +454,7 @@ function rotorButton_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 global a;
 global rotorSpeed;
-rotorSpeed = get(handles.rotorText,'String');
+rotorSpeed = str2double(get(handles.rotorText,'String'));
 if(a) 
     analogWrite(a,M1_PWM,round(rotorSpeed*255));
 end
@@ -560,3 +595,38 @@ function resetButton_Callback(hObject, eventdata, handles)
 % hObject    handle to resetButton (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+global a;
+global run;
+global gen;
+global step;
+global enc;
+global pot;
+global step;
+global loop;
+global step_tot;
+global yTime;
+global mot;
+global curr;
+global pow;
+
+mot = [0; 0];
+enc = [0; 0];
+gen = [0; 0];
+curr = [0; 0];
+pow = [0; 0];
+step = [0; 0];
+pot = [0; 0];
+yTime = [0; 0];
+
+% clear the plot
+if(exist('data','var'))
+    clf(data, 'reset');
+end
+ 
+% set(data,'XData',yTime,'YData',step);
+% set(motor,'XData',yTime,'YData',mot);
+% set(encoder,'XData',yTime,'YData',enc);
+% set(generator,'XData',yTime,'YData',gen);
+% set(potentiometer,'XData',yTime,'YData',pot);
+% set(power,'XData',yTime,'YData',pow);
+% set(current,'XData',yTime,'YData',curr);
